@@ -1,0 +1,24 @@
+# Source code
+src/
+
+# Dependencies
+node_modules/
+
+# Build artifacts (just in case)
+dist/
+
+# Config
+tsconfig.json
+
+# Environment
+.env
+.env.local
+
+# Git
+.git
+.gitignore
+
+# Misc
+.vscode/
+.idea/
+.DS_Store

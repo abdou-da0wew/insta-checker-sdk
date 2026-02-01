@@ -1,0 +1,41 @@
+{
+  "name": "insta-checker-sdk",
+  "version": "1.0.3",
+  "description": "A robust, production-ready Instagram username availability checker written in TypeScript.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "instagram",
+    "username",
+    "checker",
+    "availability",
+    "bot",
+    "discord",
+    "api",
+    "typescript"
+  ],
+  "author": "Abdou-da0wew <aabdouaydev911@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/abdou-da0wew/insta-checker-sdk.git"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "files": [
+    "dist/",
+    "docs/",
+    "README.md",
+    "LICENSE"
+  ]
+}

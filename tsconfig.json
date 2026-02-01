@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",              /* Target modern JS environment */
+    "module": "commonjs",            /* CommonJS is standard for Node libraries */
+    "declaration": true,             /* Generates corresponding .d.ts files */
+    "outDir": "./dist",             /* Output directory */
+    "rootDir": "./src",             /* Source directory */
+    "removeComments": true,         /* Remove comments in the dist build */
+    "strict": true,                 /* Enable all strict type-checking options */
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
