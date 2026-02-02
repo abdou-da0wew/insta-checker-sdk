@@ -1,0 +1,108 @@
+name: Build & Ship SDK
+
+on:
+  push:
+    branches: ["main"]
+    tags: ["v*"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Check Lockfile
+        run: |
+          if [ ! -f bun.lock ] && [ ! -f bun.lockb ]; then
+            echo "Error: Bun lockfile missing. Run 'bun install' and commit the result."
+            exit 1
+          fi
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: Type Check
+        run: bun run lint
+
+      - name: Build
+        run: bun run build
+
+      - name: Test (Unit)
+        # Running standard unit tests with mocks for speed/safety
+        run: bun run test
+
+      - name: Save Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-artifact
+          path: dist/
+          retention-days: 1
+
+      - name: Discord Alert (Failure)
+        if: failure()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          curl -H "Content-Type: application/json" \
+          -d "{\"content\": \"[Build Failed] Tests or Build broken on: ${GITHUB_REF_NAME}\"}" \
+          $DISCORD_WEBHOOK
+
+  publish:
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Load Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-artifact
+          path: dist/
+
+      - name: Publish Package
+        run: |
+          echo "Releasing version ${GITHUB_REF_NAME}..."
+          bun publish --access public || npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Discord Alert (Success)
+        if: success()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          curl -H "Content-Type: application/json" \
+          -d "{\"content\": \"[Deployed] New version ${GITHUB_REF_NAME} is live on NPM.\"}" \
+          $DISCORD_WEBHOOK
+
+      - name: Discord Alert (Publish Failed)
+        if: failure()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          curl -H "Content-Type: application/json" \
+          -d "{\"content\": \"[Error] Failed to publish version ${GITHUB_REF_NAME}. CI logs required.\"}" \
+          $DISCORD_WEBHOOK

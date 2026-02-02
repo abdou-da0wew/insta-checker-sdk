@@ -29,3 +29,4 @@ declare class InstaChecker {
     clearCache(): void;
 }
 export default InstaChecker;
+//# sourceMappingURL=InstaChecker.d.ts.map
