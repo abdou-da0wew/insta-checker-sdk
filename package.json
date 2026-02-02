@@ -1,6 +1,6 @@
 {
   "name": "insta-checker-sdk",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A robust, production-ready Instagram username availability checker written in TypeScript.",
   "author": "Abdou-da0wew <aabdouaydev911@gmail.com>",
   "license": "MIT",
