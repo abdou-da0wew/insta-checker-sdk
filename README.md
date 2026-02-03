@@ -59,11 +59,11 @@ checker.checkUsername('google').then(result => {
 ## 📖 Documentation
 
 * [Getting Started](/docs/getting-started.md)
-* [API Reference](https://www.google.com/search?q=./docs/api-reference.md)
-* [Usage Examples](https://www.google.com/search?q=./docs/examples.md)
+* [API Reference](/docs/api-reference.md)
+* [Usage Examples](/docs/examples.md)
 
 ## ⚖️ License
 
-MIT © [Abdou-da0wew](https://www.google.com/search?q=https://github.com/abdou-da0wew)
+MIT © [Abdou-da0wew](https://github.com/abdou-da0wew)
 
 
