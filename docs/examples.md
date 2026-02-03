@@ -1,127 +1,87 @@
 # Usage Examples
 
-Here are some common patterns for using this SDK in different types of applications.
-
-## Discord Bot (discord.js)
-
-This example shows how to add a command to check a username.
+### 🤖 Discord.js Bot Command
+Efficiently handle a user command to check availability without blocking the bot's heartbeat.
 
 ```javascript
-const { Client, GatewayIntentBits } = require('discord.js');
-const InstaChecker = require('insta-checker-sdk');
+const { InstaChecker } = require('insta-checker-sdk');
+const checker = new InstaChecker({ concurrency: 2 });
 
-// Initialize the checker
-const checker = new InstaChecker({ timeout: 5000 });
-
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
-
-client.on('messageCreate', async message => {
-    if (message.content.startsWith('!check')) {
-        // Get the username from the command
-        const args = message.content.split(' ');
-        const username = args[1];
-
-        if (!username) {
-            return message.reply('Please provide a username.');
-        }
-
-        // Reply immediately so the user knows we are working
-        const msg = await message.channel.send(`Checking \`${username}\`...`);
-
+client.on('messageCreate', async (message) => {
+    if (message.content.startsWith('!check ')) {
+        const username = message.content.split(' ')[1];
+        
+        const loading = await message.reply(`🔍 Scanning for \`${username}\`...`);
+        
         try {
-            const result = await checker.checkUsername(username);
+            const { available, cached } = await checker.checkUsername(username);
+            const status = available ? '✅ Available' : '❌ Taken';
+            const footer = cached ? ' (Result from cache)' : '';
             
-            let status = result.available ? 'Available' : 'Taken';
-            if (result.cached) status += ' (Cached)';
-            
-            msg.edit(`Status: ${status}`);
-        } catch (error) {
-            msg.edit('Error checking username.');
+            await loading.edit(`${status}${footer}`);
+        } catch (err) {
+            await loading.edit(`⚠️ Error: ${err.message}`);
         }
     }
 });
 
-client.login('YOUR_BOT_TOKEN');
 ```
 
-## Express Web API
+### 🌐 Express.js API Endpoint
 
-This example creates a simple HTTP endpoint to check usernames.
+Create a microservice that checks batches of usernames.
 
 ```javascript
-const express = require('express');
-const InstaChecker = require('insta-checker-sdk');
+import express from 'express';
+import { InstaChecker } from 'insta-checker-sdk';
 
 const app = express();
 const checker = new InstaChecker({ concurrency: 20 });
 
-// Middleware to parse JSON
 app.use(express.json());
 
-app.get('/api/check/:username', async (req, res) => {
-    const { username } = req.params;
+app.post('/v1/batch-check', async (req, res) => {
+    const { list } = req.body; // Expecting ["user1", "user2"]
+    
+    if (!Array.isArray(list)) return res.status(400).json({ error: "List must be an array" });
 
     try {
-        const result = await checker.checkUsername(username);
-        res.json({
-            username: username,
-            available: result.available,
-            cached: result.cached
-        });
+        const results = await checker.checkBatch(list);
+        res.json({ success: true, results });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
-app.post('/api/check-batch', async (req, res) => {
-    const { usernames } = req.body;
+app.listen(3000);
 
-    if (!Array.isArray(usernames)) {
-        return res.status(400).json({ error: 'Expected an array of usernames' });
-    }
-
-    try {
-        const results = await checker.checkBatch(usernames);
-        res.json(results);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-app.listen(3000, () => console.log('Server running on port 3000'));
 ```
 
-## Bulk Checking with Progress
+### 🛠️ CLI Power-User Script
 
-If you need to check 10,000 usernames, you might want to log progress to the console.
+Check a list of 1,000 usernames with a progress bar and save results to JSON.
 
 ```javascript
-const InstaChecker = require('insta-checker-sdk');
-const fs = require('fs');
+import { InstaChecker } from 'insta-checker-sdk';
+import fs from 'node:fs/promises';
 
-const checker = new InstaChecker({ concurrency: 10 });
+const checker = new InstaChecker({ concurrency: 15 });
+const usernames = ["alpha", "beta", "gamma", /* ... 1000 names */];
 
-// Imagine you loaded this from a file
-const hugeList = Array.from({ length: 1000 }, (_, i) => `user${i}`);
-
-async function runBulk() {
-    console.log(`Starting bulk check for ${hugeList.length} users...`);
-
-    const startTime = Date.now();
-
-    const results = await checker.checkBatch(hugeList, {
+async function start() {
+    console.log("🚀 Starting Bulk Scan...");
+    
+    const results = await checker.checkBatch(usernames, {
         onProgress: (info) => {
-            // Update console log in place
-            process.stdout.write(`\rProgress: ${info.current}/${info.total} (${Math.round(info.current/info.total*100)}%)`);
+            const pct = Math.round((info.current / info.total) * 100);
+            process.stdout.write(`\rProgress: ${pct}% [${info.current}/${info.total}] - Last: ${info.username}`);
         }
     });
 
-    const duration = (Date.now() - startTime) / 1000;
-    console.log(`\nDone in ${duration} seconds.`);
-
-    // Save to file
-    fs.writeFileSync('results.json', JSON.stringify(results, null, 2));
+    await fs.writeFile('output.json', JSON.stringify(results, null, 2));
+    console.log("\n✅ Scan complete. Results saved to output.json");
 }
 
-runBulk();
+start();
+
 ```

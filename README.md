@@ -1,116 +1,69 @@
-# Insta Checker SDK
+# Insta Checker SDK 📸
 
-A Node.js and TypeScript library to check if an Instagram username is available. It handles connection pooling, caching, and retries so you don't have to write that boilerplate yourself.
+[![NPM Version](https://img.shields.io/npm/v/insta-checker-sdk)](https://www.npmjs.com/package/insta-checker-sdk)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Bun](https://img.shields.io/badge/Bun-%23000000.svg?style=flat&logo=bun&logoColor=white)](https://bun.sh)
 
-This is useful for Discord bots, web apps, or scripts that need to check a lot of names quickly.
+A high-performance, production-ready Node.js and TypeScript library designed to check Instagram username availability. Unlike simple fetch scripts, this SDK implements professional-grade networking features including **HTTP/1.1 Connection Pooling**, **Parallel Concurrency Control**, and **Memory Caching**.
 
-## Installation
+## 🚀 Key Features
 
-Install the package via npm:
+* **📦 Dual-Mode Support**: Native ESM and CommonJS (CJS) support. Works perfectly with `import` or `require()`.
+* **⚡ High Performance**: Uses a Persistent HTTPS Agent to reuse sockets, significantly reducing latency for batch checks.
+* **🛡️ Robust Error Handling**: Built-in exponential backoff retries for network flakiness.
+* **💾 Smart Caching**: Integrated TTL-based memory cache to prevent redundant API hits.
+* **🚦 Concurrency Control**: Process thousands of usernames without hitting rate limits or crashing your event loop.
+* **🔷 TypeScript Native**: Written in TS with full type definitions exported for a 10/10 developer experience.
+
+## 📥 Installation
 
 ```bash
+# Using npm
 npm install insta-checker-sdk
+
+# Using bun
+bun add insta-checker-sdk
+
+# Using yarn
+yarn add insta-checker-sdk
+
 ```
 
-## Quick Start
+## 🛠️ Quick Start
 
-Here is the simplest way to check one username.
+### Modern ESM (TypeScript/Bun/Node 18+)
 
-```javascript
-const InstaChecker = require('insta-checker-sdk');
+```typescript
+import InstaChecker from 'insta-checker-sdk';
 
 const checker = new InstaChecker();
+const { available, cached } = await checker.checkUsername('creative_name');
 
-async function run() {
-    const result = await checker.checkUsername('ninja');
-    
-    if (result.available) {
-        console.log('The username is free.');
-    } else {
-        console.log('The username is taken.');
-    }
-}
+console.log(`Username is ${available ? 'FREE' : 'TAKEN'}`);
 
-run();
 ```
 
-## Features
-
-*   **Connection Pooling**: Reuses HTTP connections to check names faster.
-*   **Caching**: Saves results in memory for a set time to avoid checking the same name twice.
-*   **Retries**: Automatically tries again if a request times out or fails.
-*   **Batch Checking**: Checks multiple names in parallel with a configurable limit.
-*   **TypeScript Support**: Included types for full IDE autocomplete.
-
-## Basic Usage
-
-### Checking a single username
-
-The `checkUsername` method returns an object with two properties: `available` (boolean) and `cached` (boolean).
+### Legacy CommonJS (Node.js)
 
 ```javascript
-const InstaChecker = require('insta-checker-sdk');
+const { InstaChecker } = require('insta-checker-sdk');
+
 const checker = new InstaChecker({ timeout: 3000 });
 
-const result = await checker.checkUsername('apple');
-
-console.log(result);
-// Output: { available: false, cached: false }
-```
-
-### Checking multiple usernames
-
-Use `checkBatch` to process a list of names. This runs checks in parallel based on your concurrency setting.
-
-```javascript
-const usernames = ['john', 'jane', 'doe', 'admin'];
-
-const results = await checker.checkBatch(usernames);
-
-console.log(results);
-// Output: { john: false, jane: true, doe: true, admin: false }
-```
-
-You can add a callback to track progress while the batch is running.
-
-```javascript
-await checker.checkBatch(usernames, {
-    onProgress: (info) => {
-        console.log(`Checked ${info.current} of ${info.total}`);
-    }
+checker.checkUsername('google').then(result => {
+    console.log(result.available); // false
 });
+
 ```
 
-## Configuration
+## 📖 Documentation
 
-You can pass an options object to the constructor.
+* [Getting Started](/docs/getting-started.md)
+* [API Reference](https://www.google.com/search?q=./docs/api-reference.md)
+* [Usage Examples](https://www.google.com/search?q=./docs/examples.md)
 
-| Option | Type | Default | Description |
-| --- | --- | --- | --- |
-| `timeout` | number | 5000 | Time to wait for a response in milliseconds. |
-| `concurrency` | number | 5 | How many requests to send at the same time. |
-| `retries` | number | 2 | How many times to retry a failed request. |
-| `cacheTTL` | number | 300000 | How long to cache results in milliseconds (default 5 mins). |
-| `enableCache` | boolean | true | Turn caching on or off. |
+## ⚖️ License
 
-Example:
+MIT © [Abdou-da0wew](https://www.google.com/search?q=https://github.com/abdou-da0wew)
 
-```javascript
-const checker = new InstaChecker({
-    concurrency: 10, // Check 10 names at once
-    timeout: 2000,  // Fail fast after 2 seconds
-    cacheTTL: 60000 // Keep cache for 1 minute
-});
-```
 
-## Clearing Cache
-
-If you want to force a refresh of all names, clear the cache manually.
-
-```javascript
-checker.clearCache();
-```
-
-## License
-
-MIT

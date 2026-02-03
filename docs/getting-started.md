@@ -1,77 +1,61 @@
-
 # Getting Started
 
-This guide covers the basics of setting up and running the Insta Checker SDK in your project.
+Welcome to the Insta Checker SDK. This guide will help you move from installation to running high-volume username checks efficiently.
 
-## How it works
+## Core Philosophy
 
-The library uses an external API to check availability. It sends a POST request and looks for the `available` status in the response.
+This library is built for **scale**. When checking usernames at scale, the primary bottlenecks are DNS resolution and TCP handshake overhead. 
 
-To make this efficient for production, we do a few things:
+1.  **Connection Pooling**: We use a custom `https.Agent` with `keepAlive: true`. This maintains a pool of open sockets to the API server, allowing subsequent requests to bypass the handshake phase.
+2.  **Queue Management**: The `checkBatch` method uses a worker-pool pattern to process usernames. You define the `concurrency` (default: 5), and the SDK ensures no more than that many requests are in-flight simultaneously.
 
-1.  **Keep-Alive**: We open an HTTPS connection and keep it open to check many names without reconnecting.
-2.  **Concurrency**: We don't fire off 1000 requests instantly. We queue them and process them in small batches (default is 5 at a time).
-3.  **Memory Cache**: If you check "instagram" twice in 5 minutes, the second time comes from memory.
+## Setup Requirements
+* **Runtime**: Node.js v18.0.0 or higher, or Bun v1.0.0 or higher.
+* **Environment**: Works in both Server-side (Node/Bun) and Desktop (Electron) environments.
 
-## Installation
+## Your First implementation
 
-Make sure you are using Node.js version 14 or higher.
+Create a file named `scanner.ts` (or `.js`):
 
-```bash
-npm install insta-checker-sdk
-```
-## Your first script
+```typescript
+import { InstaChecker } from 'insta-checker-sdk';
 
-Create a file called `check.js` and paste this code:
-
-```javascript
-const InstaChecker = require('insta-checker-sdk');
-
-// Create a new instance
+// 1. Initialize with custom performance settings
 const checker = new InstaChecker({
-    timeout: 5000,
-    retries: 3
+    concurrency: 10,   // Process 10 at a time
+    retries: 3,        // Retry 3 times on network failure
+    timeout: 4000      // 4 second timeout per request
 });
 
-async function main() {
+async function run() {
     try {
-        console.log('Checking username...');
-        const result = await checker.checkUsername('microsoft');
-        
-        if (result.available) {
-            console.log('Available!');
-        } else {
-            console.log('Taken.');
-        }
+        // 2. Check a single name
+        const result = await checker.checkUsername('example_user');
+        console.log(`Availability: ${result.available}`);
+
+        // 3. Clean up if necessary
+        checker.clearCache();
     } catch (error) {
-        console.error('Something went wrong:', error.message);
+        console.error("SDK Error:", error.message);
     }
 }
 
-main();
+run();
+
 ```
 
-Run it:
+## TypeScript Configuration
 
-```bash
-node check.js
+If you are using TypeScript, ensure your `tsconfig.json` has `moduleResolution` set to `node` or `bundler` to correctly resolve the dual-mode exports.
+
+```json
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true
+  }
+}
+
 ```
-
-## TypeScript Support
-
-If you use TypeScript, import the class and the types.
-
-```typescript
-import InstaChecker, { CheckerOptions, CheckResult } from 'insta-checker-sdk';
-
-const options: CheckerOptions = {
-    timeout: 4000
-};
-
-const checker = new InstaChecker(options);
-
-const result: CheckResult = await checker.checkUsername('google');
-```
-
-The types are built into the package, so you don't need to install anything extra.
 

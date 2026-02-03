@@ -1,7 +1,4 @@
-import InstaChecker from './InstaChecker';
-
-// Export the class as default
-export default InstaChecker;
-
-// Re-export types explicitly
+import { InstaChecker } from './InstaChecker';
+export { InstaChecker };
 export type { CheckerOptions, CheckResult, BatchProgressInfo, BatchOptions } from './InstaChecker';
+export default InstaChecker;
