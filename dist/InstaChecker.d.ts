@@ -18,7 +18,7 @@ export interface BatchProgressInfo {
 export interface BatchOptions {
     onProgress?: (info: BatchProgressInfo) => void;
 }
-declare class InstaChecker {
+export declare class InstaChecker {
     private config;
     private agent;
     private cache;
@@ -29,4 +29,3 @@ declare class InstaChecker {
     clearCache(): void;
 }
 export default InstaChecker;
-//# sourceMappingURL=InstaChecker.d.ts.map

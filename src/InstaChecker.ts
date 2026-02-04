@@ -172,4 +172,11 @@ export class InstaChecker {
   }
 }
 
+// For ES modules
 export default InstaChecker;
+
+// For CommonJS
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = InstaChecker;
+  module.exports.default = InstaChecker;
+}

@@ -1,8 +1,5 @@
 import * as https from 'https';
-class InstaChecker {
-    config;
-    agent;
-    cache;
+export class InstaChecker {
     constructor(opts = {}) {
         this.config = {
             timeout: opts.timeout || 5000,
@@ -10,29 +7,26 @@ class InstaChecker {
             retries: opts.retries ?? 2,
             cacheTTL: opts.cacheTTL || 300000,
             enableCache: opts.enableCache !== false,
-            apiUrl: "https://wp2.hopperhq.com/wp-content/plugins/freetools-api/checker/username",
+            apiUrl: "wp2.hopperhq.com",
         };
         this.agent = new https.Agent({
             keepAlive: true,
             keepAliveMsecs: 1000,
             maxSockets: 50,
-            maxFreeSockets: 10,
         });
         this.cache = new Map();
     }
     async checkUsername(username) {
         if (!username || typeof username !== "string") {
-            throw new Error("Hey, give me a valid username string!");
+            throw new Error("Invalid username provided");
         }
-        const cleanName = username.trim();
+        const cleanName = username.trim().toLowerCase();
         if (this.config.enableCache && this.cache.has(cleanName)) {
             const cached = this.cache.get(cleanName);
             if (Date.now() - cached.timestamp < this.config.cacheTTL) {
                 return { available: cached.data, cached: true };
             }
-            else {
-                this.cache.delete(cleanName);
-            }
+            this.cache.delete(cleanName);
         }
         let attempt = 0;
         let lastErr;
@@ -47,21 +41,23 @@ class InstaChecker {
             catch (err) {
                 lastErr = err;
                 attempt++;
-                await new Promise(r => setTimeout(r, 100 * Math.pow(2, attempt)));
+                if (attempt <= this.config.retries) {
+                    await new Promise(r => setTimeout(r, 200 * attempt));
+                }
             }
         }
-        throw new Error(`Could not check "${cleanName}" after ${attempt} attempts. Last error: ${lastErr?.message}`);
+        throw new Error(`Failed to check "${cleanName}" after ${attempt} attempts: ${lastErr?.message}`);
     }
     _makeRequest(username) {
         return new Promise((resolve, reject) => {
             const payload = JSON.stringify({ username, platform: "instagram" });
             const reqOptions = {
-                hostname: "wp2.hopperhq.com",
+                hostname: this.config.apiUrl,
                 path: "/wp-content/plugins/freetools-api/checker/username",
                 method: "POST",
                 agent: this.agent,
                 headers: {
-                    "User-Agent": "Mozilla/5.0 (compatible; Functiolita/1.0; +https://axionforge.com/abdou-da0wew)",
+                    "User-Agent": "InstaCheckerSDK/1.0.6",
                     "Accept": "application/json",
                     "Content-Type": "application/json",
                     "Content-Length": Buffer.byteLength(payload),
@@ -78,14 +74,14 @@ class InstaChecker {
                         resolve(json.result?.available ?? false);
                     }
                     catch (e) {
-                        reject(new Error("Failed to parse JSON"));
+                        reject(new Error("Invalid API response"));
                     }
                 });
             });
-            req.on("error", (err) => reject(err));
+            req.on("error", reject);
             req.on("timeout", () => {
                 req.destroy();
-                reject(new Error("Request timed out"));
+                reject(new Error("Request timeout"));
             });
             req.setTimeout(this.config.timeout);
             req.write(payload);
@@ -93,17 +89,13 @@ class InstaChecker {
         });
     }
     async checkBatch(usernames, options = {}) {
-        if (!Array.isArray(usernames))
-            throw new Error("Usernames must be an array");
         const results = {};
         const queue = [...new Set(usernames)];
         let currentIndex = 0;
         let doneCount = 0;
-        const total = queue.length;
         const workers = Array.from({ length: this.config.concurrency }, async () => {
             while (currentIndex < queue.length) {
-                const index = currentIndex++;
-                const name = queue[index];
+                const name = queue[currentIndex++];
                 if (!name)
                     break;
                 try {
@@ -112,12 +104,14 @@ class InstaChecker {
                 }
                 catch (err) {
                     results[name] = null;
-                    console.error(`Error checking ${name}: ${err.message}`);
                 }
                 doneCount++;
-                if (options.onProgress) {
-                    options.onProgress({ current: doneCount, total, username: name, lastResult: results[name] });
-                }
+                options.onProgress?.({
+                    current: doneCount,
+                    total: queue.length,
+                    username: name,
+                    lastResult: results[name]
+                });
             }
         });
         await Promise.all(workers);
@@ -127,5 +121,11 @@ class InstaChecker {
         this.cache.clear();
     }
 }
+// For ES modules
 export default InstaChecker;
+// For CommonJS
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = InstaChecker;
+    module.exports.default = InstaChecker;
+}
 //# sourceMappingURL=InstaChecker.js.map
